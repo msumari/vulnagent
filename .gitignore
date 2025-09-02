@@ -42,3 +42,10 @@ secrets/
 # Bedrock AgentCore specific - keep config but exclude runtime files
 .bedrock_agentcore.yaml
 .dockerignore
+
+# SAM
+.aws-sam/
+samconfig.toml
+
+# AWS
+.aws/

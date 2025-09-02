@@ -1,0 +1,23 @@
+{
+  "version": "0",
+  "id": "test-event-id",
+  "detail-type": "Inspector2 Finding",
+  "source": "aws.inspector2",
+  "account": "123456789012",
+  "time": "2023-01-01T00:00:00Z",
+  "region": "us-east-1",
+  "detail": {
+    "findingArn": "arn:aws:inspector2:us-east-1:123456789012:finding/test-finding",
+    "severity": "HIGH",
+    "title": "CVE-2023-1234 - Test Vulnerability",
+    "description": "Test vulnerability description",
+    "packageVulnerabilityDetails": {
+      "vulnerablePackages": [
+        {
+          "name": "test-package",
+          "version": "1.0.0"
+        }
+      ]
+    }
+  }
+}

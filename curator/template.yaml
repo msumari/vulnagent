@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  InspectorVulnFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: handler.lambda_handler
+      Runtime: python3.11
+      Events:
+        InspectorFindings:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source: ["aws.inspector2"]
+              detail-type: ["Inspector2 Finding"]
