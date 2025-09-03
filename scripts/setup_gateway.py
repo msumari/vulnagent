@@ -21,21 +21,54 @@ def create_vulnagent_gateway():
     )
 
     print(f"✅ Gateway created successfully!")
-    print(f"MCP Endpoint: {gateway['mcp_url']}")
-    print(f"Gateway ID: {gateway['gateway_id']}")
+    
+    # Debug: Print the actual gateway response structure
+    print(f"Gateway response type: {type(gateway)}")
+    print(f"Gateway response: {gateway}")
+    
+    # Handle different possible response structures
+    if isinstance(gateway, dict):
+        gateway_id = gateway.get('gatewayId') or gateway.get('gateway_id')
+        if not gateway_id:
+            # Try to extract from ARN if available
+            gateway_arn = gateway.get('gatewayArn') or gateway.get('arn')
+            if gateway_arn:
+                gateway_id = gateway_arn.split('/')[-1]
+    else:
+        # If it's an object, try to access attributes
+        gateway_id = getattr(gateway, 'gatewayId', None) or getattr(gateway, 'gateway_id', None)
+    
+    if not gateway_id:
+        raise Exception("Could not extract gateway ID from response")
+    
+    # Construct MCP URL
+    mcp_url = f"https://{gateway_id}.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp"
+    
+    print(f"MCP Endpoint: {mcp_url}")
+    print(f"Gateway ID: {gateway_id}")
     print(f"\nOAuth Credentials:")
     print(f"  Client ID: {cognito_result['client_info']['client_id']}")
     print(f"  Client Secret: {cognito_result['client_info']['client_secret']}")
     print(f"  Scope: {cognito_result['client_info']['scope']}")
-    print(f"  Domain: {cognito_result['client_info']['domain']}")
-
+    
+    # Get domain from cognito_result or construct it
+    domain = cognito_result['client_info'].get('domain')
+    if not domain:
+        # Extract domain from the cognito_result structure
+        # The domain should be in the format: agentcore-{hash}.auth.us-east-1.amazoncognito.com
+        # We can extract it from other cognito info or construct it
+        domain_prefix = cognito_result.get('domain_name', 'agentcore-214b416c')  # fallback
+        domain = f"{domain_prefix}.auth.us-east-1.amazoncognito.com"
+    
+    print(f"  Domain: {domain}")
+    
     # Save gateway info for later use
     gateway_info = {
-        "gateway_id": gateway["gateway_id"],
-        "mcp_url": gateway["mcp_url"],
+        "gateway_id": gateway_id,
+        "mcp_url": mcp_url,
         "client_id": cognito_result["client_info"]["client_id"],
         "client_secret": cognito_result["client_info"]["client_secret"],
-        "domain": cognito_result["client_info"]["domain"],
+        "domain": domain,
     }
 
     import json
