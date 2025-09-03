@@ -12,7 +12,10 @@ MCP-compatible gateway that exposes vulnerability management tools to AI agents.
 
 ```bash
 # Create gateway
-python setup_gateway.py
+python scripts/setup_gateway.py
+
+# Add curator Lambda as target
+python scripts/add_lambda_target.py <lambda-function-arn>
 ```
 
 **Note:** Gateway configuration is saved to `gateway_config.json` (excluded from git for security).
@@ -41,7 +44,7 @@ curl -X POST http://localhost:8080/invocations \
 
 ### 3. Curator (Lambda Function)
 
-Processes AWS Inspector vulnerability findings via EventBridge.
+Processes AWS Inspector vulnerability findings via EventBridge AND serves as MCP tools via Gateway.
 
 **Deploy:**
 
@@ -69,11 +72,13 @@ sam local invoke InspectorVulnFunction -e test-event.json
 
 ```
 ├── agent.py              # Main agent application
-├── setup_gateway.py      # Gateway setup script
+├── scripts/              # Setup and deployment scripts
+│   ├── setup_gateway.py  # Gateway setup script
+│   └── add_lambda_target.py # Add Lambda as Gateway target
 ├── gateway_config.json   # Gateway configuration (generated, git-ignored)
 ├── curator/              # Lambda function for Inspector events
 │   ├── template.yaml     # SAM template
-│   ├── src/handler.py    # Lambda handler
+│   ├── src/handler.py    # Lambda handler (supports EventBridge + Gateway)
 │   └── test-event.json   # Sample Inspector event
 └── requirements.txt      # Python dependencies
 ```
