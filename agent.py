@@ -1,15 +1,94 @@
+#!/usr/bin/env python3
+"""
+VulnAgent - Agentic Vulnerability Management System
+"""
+
+import json
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
+from strands.tools.mcp import MCPClient
+from mcp.client.streamable_http import streamablehttp_client
 
 app = BedrockAgentCoreApp()
-agent = Agent(model="anthropic.claude-3-haiku-20240307-v1:0")
+
+# Vulnerability management focused system prompt
+VULN_SYSTEM_PROMPT = """
+You are VulnAgent, a specialized vulnerability analysis assistant designed to provide security insights and recommendations. Your role is to:
+
+1. Analyze AWS Inspector vulnerability findings and security assessments
+2. Provide risk-based analysis and prioritization guidance  
+3. Generate actionable security recommendations and best practices
+4. Use available vulnerability analysis tools to gather detailed information
+
+Key Responsibilities:
+- Process vulnerability findings from AWS Inspector and other security tools
+- Assess risk levels based on severity, exploitability, and potential business impact
+- Provide specific recommendations and suggested next steps
+- Maintain clear, actionable communication about security findings
+- Focus on practical guidance rather than immediate remediation requirements
+
+Decision Protocol:
+- For vulnerability analysis → Use analyze_vulnerability_finding tool when available
+- For Inspector events → Use process_inspector_event tool when available  
+- Always provide risk assessment with clear reasoning
+- Include prioritized recommendations based on severity and impact
+- Suggest investigation steps and monitoring approaches
+
+Focus on providing valuable security insights and practical recommendations that help users understand and prioritize their vulnerability management efforts.
+"""
+
+
+def create_vuln_agent():
+    """Create vulnerability agent with MCP Gateway tools"""
+    try:
+        with open("gateway_config.json", "r") as f:
+            config = json.load(f)
+
+        mcp_url = config["mcp_url"]
+        # TODO: For now, skip OAuth - will need client_secret setup
+
+        # Create MCP client for Gateway (without auth for testing)
+        gateway_client = MCPClient(lambda: streamablehttp_client(mcp_url))
+
+        with gateway_client:
+            tools = gateway_client.list_tools_sync()
+
+            agent = Agent(
+                model="anthropic.claude-3-haiku-20240307-v1:0",
+                tools=tools,
+                system_prompt=VULN_SYSTEM_PROMPT,
+            )
+
+            return agent, gateway_client
+
+    except Exception as e:
+        print(f"Gateway connection failed: {e}")
+        return None, None
 
 
 @app.entrypoint
 def invoke(payload):
-    user_input = payload.get("prompt", "Tell me about agentic AI")
-    result = agent(user_input)
-    return {"result": result.message}
+    """Process vulnerability management requests"""
+    user_input = payload.get("prompt", "Analyze vulnerability status")
+
+    try:
+        agent, gateway_client = create_vuln_agent()
+
+        if agent and gateway_client:
+            with gateway_client:
+                result = agent(user_input)
+                return {"result": result.message}
+        else:
+            # Fallback to basic agent
+            basic_agent = Agent(
+                model="anthropic.claude-3-haiku-20240307-v1:0",
+                system_prompt=VULN_SYSTEM_PROMPT,
+            )
+            result = basic_agent(user_input)
+            return {"result": result.message}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 
 if __name__ == "__main__":
