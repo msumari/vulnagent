@@ -38,6 +38,7 @@ build/
 *.pem
 *.crt
 secrets/
+gateway_config.json
 
 # Bedrock AgentCore specific - keep config but exclude runtime files
 .bedrock_agentcore.yaml

@@ -4,7 +4,20 @@ A Proof of concept Agentic vulnerability management system.
 
 ## Components
 
-### 1. Agent (Bedrock AgentCore + Strands)
+### 1. Gateway (Bedrock AgentCore Gateway)
+
+MCP-compatible gateway that exposes vulnerability management tools to AI agents.
+
+**Setup:**
+
+```bash
+# Create gateway
+python setup_gateway.py
+```
+
+**Note:** Gateway configuration is saved to `gateway_config.json` (excluded from git for security).
+
+### 2. Agent (Bedrock AgentCore + Strands)
 
 AI agent using Claude 3 Haiku for vulnerability analysis, built with Strands framework for agentic workflows.
 
@@ -26,7 +39,7 @@ curl -X POST http://localhost:8080/invocations \
 -d '{"prompt": "Explain how machine learning models work in simple terms"}'
 ```
 
-### 2. Curator (Lambda Function)
+### 3. Curator (Lambda Function)
 
 Processes AWS Inspector vulnerability findings via EventBridge.
 
@@ -56,6 +69,8 @@ sam local invoke InspectorVulnFunction -e test-event.json
 
 ```
 ├── agent.py              # Main agent application
+├── setup_gateway.py      # Gateway setup script
+├── gateway_config.json   # Gateway configuration (generated, git-ignored)
 ├── curator/              # Lambda function for Inspector events
 │   ├── template.yaml     # SAM template
 │   ├── src/handler.py    # Lambda handler
