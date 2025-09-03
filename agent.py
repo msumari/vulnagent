@@ -4,6 +4,7 @@ VulnAgent - Agentic Vulnerability Management System
 """
 
 import json
+import requests
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent
 from strands.tools.mcp import MCPClient
@@ -38,6 +39,41 @@ Focus on providing valuable security insights and practical recommendations that
 """
 
 
+def get_access_token():
+    """Get OAuth access token for Gateway authentication"""
+    try:
+        with open("gateway_config.json", "r") as f:
+            config = json.load(f)
+
+        client_id = config["client_id"]
+        client_secret = config["client_secret"]
+        domain = config["domain"]
+
+        # OAuth client credentials flow
+        token_url = f"https://{domain}/oauth2/token"
+
+        response = requests.post(
+            token_url,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "scope": "vulnagent-gateway/invoke",
+            },
+        )
+
+        if response.status_code == 200:
+            return response.json()["access_token"]
+        else:
+            print(f"OAuth failed: {response.status_code} - {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Authentication error: {e}")
+        return None
+
+
 def create_vuln_agent():
     """Create vulnerability agent with MCP Gateway tools"""
     try:
@@ -45,10 +81,18 @@ def create_vuln_agent():
             config = json.load(f)
 
         mcp_url = config["mcp_url"]
-        # TODO: For now, skip OAuth - will need client_secret setup
+        access_token = get_access_token()
 
-        # Create MCP client for Gateway (without auth for testing)
-        gateway_client = MCPClient(lambda: streamablehttp_client(mcp_url))
+        if not access_token:
+            print("Failed to get access token, falling back to basic mode")
+            return None, None
+
+        # Create MCP client for Gateway with OAuth
+        gateway_client = MCPClient(
+            lambda: streamablehttp_client(
+                mcp_url, headers={"Authorization": f"Bearer {access_token}"}
+            )
+        )
 
         with gateway_client:
             tools = gateway_client.list_tools_sync()
