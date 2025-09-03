@@ -51,14 +51,12 @@ def create_vulnagent_gateway():
     print(f"  Client Secret: {cognito_result['client_info']['client_secret']}")
     print(f"  Scope: {cognito_result['client_info']['scope']}")
     
-    # Get domain from cognito_result or construct it
-    domain = cognito_result['client_info'].get('domain')
-    if not domain:
-        # Extract domain from the cognito_result structure
-        # The domain should be in the format: agentcore-{hash}.auth.us-east-1.amazoncognito.com
-        # We can extract it from other cognito info or construct it
-        domain_prefix = cognito_result.get('domain_name', 'agentcore-214b416c')  # fallback
+    # Get domain from cognito_result
+    domain_prefix = cognito_result['client_info'].get('domain_prefix')
+    if domain_prefix:
         domain = f"{domain_prefix}.auth.us-east-1.amazoncognito.com"
+    else:
+        domain = "DOMAIN_EXTRACTION_FAILED"
     
     print(f"  Domain: {domain}")
     
