@@ -163,27 +163,124 @@ def create_vuln_agent():
         return None, None
 
 
-@app.entrypoint
-def invoke(payload):
+def create_vulnagent_multiagent_workflow():
+    """Create VulnAgent multi-agent workflow using existing infrastructure"""
+    try:
+        agent, gateway_client = create_vuln_agent()
+        
+        if agent and gateway_client:
+            with gateway_client:
+                # Create vulnerability management workflow
+                workflow_result = agent.tool.workflow(
+                    action="create",
+                    workflow_id="vulnerability_management",
+                    tasks=[
+                        {
+                            "task_id": "gather_vulnerabilities",
+                            "description": "Gather and analyze vulnerability findings",
+                            "system_prompt": VULN_GATHERER_SYSTEM_PROMPT,
+                            "dependencies": [],
+                            "priority": 5
+                        },
+                        {
+                            "task_id": "plan_remediation", 
+                            "description": "Create urgency-based remediation plans",
+                            "system_prompt": VULN_REMEDIATION_SYSTEM_PROMPT,
+                            "dependencies": ["gather_vulnerabilities"],
+                            "priority": 4
+                        },
+                        {
+                            "task_id": "critique_remediation",
+                            "description": "Validate remediation quality and worthiness",
+                            "system_prompt": VULN_CRITIC_SYSTEM_PROMPT,
+                            "dependencies": ["plan_remediation"],
+                            "priority": 3
+                        }
+                    ]
+                )
+                return agent, gateway_client, workflow_result
+        else:
+            # Fallback mode with workflow capability
+            workflow_result = agent.tool.workflow(
+                action="create",
+                workflow_id="vulnerability_management",
+                tasks=[
+                    {
+                        "task_id": "gather_vulnerabilities",
+                        "description": "Gather and analyze vulnerability findings",
+                        "system_prompt": VULN_GATHERER_SYSTEM_PROMPT,
+                        "dependencies": [],
+                        "priority": 5
+                    },
+                    {
+                        "task_id": "plan_remediation", 
+                        "description": "Create urgency-based remediation plans",
+                        "system_prompt": VULN_REMEDIATION_SYSTEM_PROMPT,
+                        "dependencies": ["gather_vulnerabilities"],
+                        "priority": 4
+                    },
+                    {
+                        "task_id": "critique_remediation",
+                        "description": "Validate remediation quality and worthiness",
+                        "system_prompt": VULN_CRITIC_SYSTEM_PROMPT,
+                        "dependencies": ["plan_remediation"],
+                        "priority": 3
+                    }
+                ]
+            )
+            return agent, None, workflow_result
+            
+    except Exception as e:
+        return None, None, {"error": str(e)}
     """Process vulnerability management requests"""
     user_input = payload.get("prompt", "Analyze vulnerability status")
 
+@app.entrypoint
+def invoke(payload):
+    """Process vulnerability management requests - supports both single agent and workflow modes"""
+    user_input = payload.get("prompt", "Analyze vulnerability status")
+    workflow_mode = payload.get("workflow_mode", False)
+    
     try:
-        agent, gateway_client = create_vuln_agent()
-
-        if agent and gateway_client:
-            with gateway_client:
-                result = agent(user_input)
-                return {"result": result.message}
+        if workflow_mode:
+            # Multi-agent workflow mode
+            agent, gateway_client, workflow_result = create_vulnagent_multiagent_workflow()
+            
+            if agent:
+                if gateway_client:
+                    with gateway_client:
+                        # Start workflow execution
+                        start_result = agent.tool.workflow(
+                            action="start", 
+                            workflow_id="vulnerability_management"
+                        )
+                        return {"result": start_result, "workflow_created": workflow_result}
+                else:
+                    # Fallback workflow execution
+                    start_result = agent.tool.workflow(
+                        action="start", 
+                        workflow_id="vulnerability_management"
+                    )
+                    return {"result": start_result, "workflow_created": workflow_result}
+            else:
+                return {"error": "Failed to create workflow"}
         else:
-            # Fallback to basic agent with workflow capability
-            basic_agent = Agent(
-                model="anthropic.claude-3-haiku-20240307-v1:0",
-                tools=[workflow],
-                system_prompt=VULN_GATHERER_SYSTEM_PROMPT,
-            )
-            result = basic_agent(user_input)
-            return {"result": result.message}
+            # Original single agent mode
+            agent, gateway_client = create_vuln_agent()
+
+            if agent and gateway_client:
+                with gateway_client:
+                    result = agent(user_input)
+                    return {"result": result.message}
+            else:
+                # Fallback to basic agent with workflow capability
+                basic_agent = Agent(
+                    model="anthropic.claude-3-haiku-20240307-v1:0",
+                    tools=[workflow],
+                    system_prompt=VULN_GATHERER_SYSTEM_PROMPT,
+                )
+                result = basic_agent(user_input)
+                return {"result": result.message}
 
     except Exception as e:
         return {"error": str(e)}
