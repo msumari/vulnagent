@@ -42,14 +42,23 @@ python scripts/add_lambda_target.py <lambda-function-arn>
 
 ### 2. **Agent (Bedrock AgentCore + Strands)**
 
-AI agent using Claude 3 Haiku for vulnerability analysis, built with Strands framework.
+AI agent using Claude 3 Haiku for vulnerability analysis, built with Strands framework using swarm architecture.
 
 **Features:**
 
 - ✅ MCP Gateway integration with OAuth
-- ✅ Professional vulnerability analysis
+- ✅ Gather → Swarm multi-agent collaboration
+- ✅ Autonomous agent handoffs with `handoff_to_agent`
+- ✅ Shared context between specialized agents
+- ✅ Vulnerability analysis with CVSS scoring
 - ✅ Risk-based prioritization
 - ✅ Actionable security recommendations
+
+**Architecture:**
+
+```
+VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] → Human Approval
+```
 
 **Setup:**
 
@@ -60,10 +69,15 @@ export AWS_PROFILE=your-profile
 # Run agent locally
 python agent.py
 
-# Test agent
+# Test single agent mode
 curl -X POST http://localhost:8080/invocations \
 -H "Content-Type: application/json" \
 -d '{"prompt": "Analyze CVE-2024-12345 - SQL Injection vulnerability, severity HIGH"}'
+
+# Test swarm mode
+curl -X POST http://localhost:8080/invocations \
+-H "Content-Type: application/json" \
+-d '{"prompt": "Create comprehensive remediation plan", "swarm_mode": true}'
 ```
 
 ### 3. **Curator (Lambda Function)**
@@ -163,7 +177,6 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 
 - OAuth 2.0 authentication with Cognito
 - Real-time tool access via Gateway
-- Proper error handling and fallback modes
 
 ### ✅ **Professional Vulnerability Analysis**
 
@@ -217,6 +230,52 @@ https://strandsagents.com/latest/documentation/docs/user-guide/deploy/deploy_to_
 
 - Gateway configuration auto-generates with proper OAuth credentials
 - Setup scripts handle domain extraction and client secret capture
+
+## Known Issues
+
+### Workflow Mode Model Access Error
+
+**Issue**: When using `workflow_mode=true`, the system encountered:
+
+```
+Error executing task gather_vulnerabilities: An error occurred (AccessDeniedException) when calling the ConverseStream operation: You don't have access to the model with the specified model ID.
+```
+
+**Root Cause**: The workflow tool attempts to create multiple agent instances simultaneously, which may exceed model quota limits or encounter permission issues when multiple agents try to access `anthropic.claude-3-haiku-20240307-v1:0` concurrently.
+
+**Solution**: Replaced workflow approach with **SWARM** architecture using Strands multi-agent swarm.
+
+### Current Gather → Swarm Implementation
+
+**Status**: WORKING - Multi-agent collaboration functional
+
+**Architecture**:
+
+```
+VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] → Human Approval
+```
+
+**Achievements**:
+
+- Autonomous agent collaboration with `handoff_to_agent` tool
+- Shared context and knowledge between specialized agents
+- Vulnerability analysis with CVSS scoring
+- Comprehensive remediation plans with security best practices
+- No model access conflicts (each agent has own model instance)
+
+**Current Issues**:
+
+- Some handoff attempts fail due to context parameter formatting
+- `execute_remediation_code` tool causes reference errors in swarm context
+- Occasional gateway connection timeouts during OAuth token retrieval
+
+**Workarounds Applied**:
+
+- Removed `execute_remediation_code` from swarm agents to investigate errors
+- Implemented fallback mode for gateway connection failures
+- Reduced swarm timeouts and iterations for better reliability
+
+**Status**: Under active development - core functionality working with minor reliability issues.
 
 ---
 
