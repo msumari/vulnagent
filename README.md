@@ -9,11 +9,14 @@ VulnAgent demonstrates advanced agentic AI capabilities for vulnerability manage
 - **AI-Powered Analysis**: Claude 3 Haiku for intelligent vulnerability assessment
 - **MCP Integration**: Model Context Protocol for tool access via Bedrock AgentCore Gateway
 - **AWS Native**: Full integration with AWS Inspector, Lambda, and AgentCore Runtime
+- **Human-in-the-Loop**: Interactive approval/decline workflow for remediation plans
+- **Multi-Agent Swarm**: Specialized agents for gathering, remediation, criticism, and knowledge keeping
+- **Context-Aware AI**: Intelligent responses based on human decisions
 
 ## 🏗️ Architecture
 
 ```
-AWS Inspector → EventBridge → Lambda (Curator) → MCP Gateway → VulnAgent → Analysis & Recommendations
+AWS Inspector → EventBridge → Lambda (Curator) → MCP Gateway → VulnAgent → Analysis & Human Approval → Remediation
 ```
 
 ## 🚀 Components
@@ -53,12 +56,19 @@ AI agent using Claude 3 Haiku for vulnerability analysis, built with Strands fra
 - ✅ Vulnerability analysis with CVSS scoring
 - ✅ Risk-based prioritization
 - ✅ Actionable security recommendations
+- ✅ Human-in-the-loop approval workflow
+- ✅ Context-aware human decision handling
 
 **Architecture:**
 
 ```
-VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] → Human Approval
+VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] → Human Approval/Decline → Final Response
 ```
+
+**Human Interaction Flow:**
+
+- **Approve**: Proceeds with comprehensive remediation plan
+- **Decline**: Provides context-aware vulnerability analysis without remediation steps
 
 **Setup:**
 
@@ -80,7 +90,41 @@ curl -X POST http://localhost:8080/invocations \
 -d '{"prompt": "Create comprehensive remediation plan", "swarm_mode": true}'
 ```
 
-### 3. **Curator (Lambda Function)**
+### 3. **Web UI**
+
+Interactive web interface for vulnerability analysis and human decision making.
+
+**Features:**
+
+- ✅ Real-time vulnerability analysis
+- ✅ Human approval/decline workflow with radio buttons
+- ✅ Clean results display with proper text extraction
+- ✅ Elegant UI design
+
+**Setup:**
+
+```bash
+# Start the agent backend
+python agent.py
+
+# Start the web interface
+cd ui
+npm install
+npm run dev
+
+# Then visit http://localhost:3000
+```
+
+**Usage:**
+
+1. Enter vulnerability prompt or use default
+2. Enable/disable swarm mode
+3. Click "Analyze Vulnerabilities"
+4. Review the remediation plan
+5. Choose "Approve" or "Decline"
+6. View final results
+
+### 4. **Curator (Lambda Function)**
 
 Processes AWS Inspector vulnerability findings and serves as MCP tools via Gateway.
 
@@ -137,7 +181,16 @@ python scripts/add_lambda_target.py <your-lambda-arn>
 4. **Test Locally:**
 
 ```bash
+# Start backend
 python agent.py &
+
+# Start frontend
+cd ui
+npm install
+npm run dev
+
+# Visit http://localhost:3000 for Web UI
+# Or test via curl
 curl -X POST http://localhost:8080/invocations \
 -H "Content-Type: application/json" \
 -d '{"prompt": "Test Gateway connection and analyze vulnerabilities"}'
@@ -157,7 +210,12 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 ## 📁 Project Structure
 
 ```
-├── agent.py                    # Main agent with MCP Gateway integration
+├── agent.py                    # Main agent with MCP Gateway integration & human workflow
+├── ui/                        # Web interface for human interaction
+│   ├── index.html             # Main UI with approval/decline workflow
+│   ├── main.js                # JavaScript for API calls and UI logic
+│   ├── style.css              # Styling with elegant button design
+│   └── package.json           # Node.js dependencies and scripts
 ├── scripts/                   # Setup and deployment scripts
 │   ├── setup_gateway.py       # Gateway setup with OAuth
 │   └── add_lambda_target.py   # Add Lambda as Gateway target
@@ -230,6 +288,9 @@ https://strandsagents.com/latest/documentation/docs/user-guide/deploy/deploy_to_
 
 - Gateway configuration auto-generates with proper OAuth credentials
 - Setup scripts handle domain extraction and client secret capture
+- Human workflow supports both approval and decline paths with appropriate responses
+- UI provides clean, elegant interface for decision making
+- Multi-agent swarm architecture enables specialized vulnerability management roles
 
 ## Known Issues
 
@@ -265,15 +326,9 @@ VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] →
 
 **Current Issues**:
 
-- Some handoff attempts fail due to context parameter formatting
+- Gateway memory integration.
 - `execute_remediation_code` tool causes reference errors in swarm context
 - Occasional gateway connection timeouts during OAuth token retrieval
-
-**Workarounds Applied**:
-
-- Removed `execute_remediation_code` from swarm agents to investigate errors
-- Implemented fallback mode for gateway connection failures
-- Reduced swarm timeouts and iterations for better reliability
 
 **Status**: Under active development - core functionality working with minor reliability issues.
 
