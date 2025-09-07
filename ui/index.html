@@ -37,9 +37,20 @@
             <div id="humanInput" class="human-input hidden">
                 <h3>Human Input Required</h3>
                 <div id="humanPrompt" class="human-prompt"></div>
-                <textarea id="humanResponse" placeholder="Enter your response..." rows="3"></textarea>
+                
+                <div class="decision-options">
+                    <label>
+                        <input type="radio" name="decision" value="approve" checked>
+                        Approve Remediation Plan
+                    </label>
+                    <label>
+                        <input type="radio" name="decision" value="decline">
+                        Decline Remediation Plan
+                    </label>
+                </div>
+                
                 <div class="human-controls">
-                    <button id="submitResponse">Submit Response</button>
+                    <button id="submitResponse">Submit Decision</button>
                     <button id="cancelHandoff" class="secondary">Cancel</button>
                 </div>
             </div>

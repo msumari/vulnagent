@@ -274,3 +274,39 @@ header p {
     padding: 16px;
     border-radius: 8px;
 }
+.decision-options {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.decision-options label {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.decision-options label:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.decision-options input[type="radio"] {
+    display: none;
+}
+
+.decision-options label:has(input:checked) {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
