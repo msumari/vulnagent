@@ -32,8 +32,10 @@ def ui_handoff_to_user(message: str, breakout_of_loop: bool = False):
     return {
         "status": "awaiting_human_input",
         "message": message,
-        "breakout_of_loop": breakout_of_loop
+        "breakout_of_loop": breakout_of_loop,
     }
+
+
 @tool
 def execute_remediation_code(code: str, description: str = ""):
     """Execute Python code for vulnerability remediation, testing, and analysis"""
@@ -72,6 +74,15 @@ Key Responsibilities:
 - Maintain clear, actionable communication about security findings
 - Focus on practical guidance rather than immediate remediation requirements
 
+Human Interaction Protocol:
+- When human DECLINES remediation plans:
+  * Use empathetic language to acknowledge and respect their decision
+  * Provide comprehensive vulnerability analysis focusing on the security concerns
+  * Explain the risks and potential impact without providing remediation steps
+  * Use phrases like "I understand your decision" or "I respect your choice"
+  * Keep attention on security awareness while being supportive
+  * Do NOT provide action items or pressure to act
+
 Decision Protocol:
 - For vulnerability analysis -> Use analyze_vulnerability_finding tool when available
 - For Inspector events -> Use process_inspector_event tool when available  
@@ -103,6 +114,17 @@ Key Responsibilities:
 - Assess business impact and determine remediation urgency using risk matrices
 - Consider operational impact and maintenance windows for remediation timing
 - Learn from past remediation successes and failures to improve recommendations
+
+Human Interaction Protocol:
+- When human provides APPROVAL (words like "approve", "approved", "looks good", "proceed"): 
+  * STOP all handoffs to other agents
+  * Provide the FINAL COMPREHENSIVE REMEDIATION PLAN with specific action items
+  * Include timeline, steps, commands, and validation procedures
+  * Do NOT hand off to other agents after human approval
+- When human provides FEEDBACK or CHANGES:
+  * Incorporate the feedback into an updated plan
+  * Provide the revised comprehensive remediation plan
+  * Do NOT hand off to other agents after incorporating feedback
 
 Decision Protocol:
 - For memory search -> Use agent_core_memory to find similar past vulnerabilities
@@ -319,19 +341,52 @@ def invoke(payload):
                         if hasattr(gather_result.message, "content")
                         else str(gather_result.message)
                     )
-                    swarm_task = f"Based on these vulnerability findings, create comprehensive remediation plan:\n\n{gather_text}"
+
+                    if human_response:
+                        # Include human response AND original context in swarm task
+                        swarm_task = f"Human response: {human_response}\n\nOriginal vulnerability analysis from gather phase:\n{gather_text}\n\nBased on this human feedback and the vulnerability findings above, provide the appropriate response according to your protocol."
+                    else:
+                        swarm_task = f"Based on these vulnerability findings, create comprehensive remediation plan:\n\n{gather_text}"
+
                     swarm_result = swarm(swarm_task)
 
-                    # Step 3: Check for human handoff and return appropriate response
-                    return {
-                        "result": {
-                            "gather_phase": gather_result.message,
-                            "swarm_remediation": swarm_result,
-                            "status": "awaiting_human_input",
-                            "human_prompt": "Please review the comprehensive remediation plan and provide your approval or feedback:",
-                            "conversation_id": conversation_id or "new_conversation"
+                    # Step 3: Return appropriate response based on human input
+                    if human_response:
+                        # Check if human declined
+                        if human_response == "decline":
+                            # Human declined - let gatherer handle with context
+                            final_result = agent(
+                                f"The human has declined the remediation plan. Based on your previous vulnerability analysis, provide an empathetic response that acknowledges their decision and explains the security concerns without providing remediation steps."
+                            )
+                            return {
+                                "result": {
+                                    "gather_phase": final_result.message,
+                                    "swarm_remediation": swarm_result,
+                                    "status": "completed",
+                                    "conversation_id": conversation_id,
+                                }
+                            }
+                        else:
+                            # Human approved - return swarm result
+                            return {
+                                "result": {
+                                    "gather_phase": gather_result.message,
+                                    "swarm_remediation": swarm_result,
+                                    "status": "completed",
+                                    "conversation_id": conversation_id,
+                                }
+                            }
+                    else:
+                        return {
+                            "result": {
+                                "gather_phase": gather_result.message,
+                                "swarm_remediation": swarm_result,
+                                "status": "awaiting_human_input",
+                                "human_prompt": "Please review the comprehensive remediation plan and provide your approval or feedback:",
+                                "conversation_id": conversation_id
+                                or "new_conversation",
+                            }
                         }
-                    }
             else:
                 # Fallback mode
                 basic_agent = Agent(
