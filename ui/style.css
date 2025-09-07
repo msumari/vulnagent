@@ -1,0 +1,276 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1d1d1f;
+    margin-bottom: 8px;
+}
+
+header p {
+    color: #86868b;
+    font-size: 1.1rem;
+}
+
+.input-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 24px;
+}
+
+#prompt {
+    width: 100%;
+    border: 2px solid #e5e5e7;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 16px;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 16px;
+}
+
+#prompt:focus {
+    outline: none;
+    border-color: #007aff;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #86868b;
+}
+
+#analyzeBtn {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#analyzeBtn:hover {
+    background: #0056cc;
+}
+
+#analyzeBtn:disabled {
+    background: #86868b;
+    cursor: not-allowed;
+}
+
+.results-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.loading {
+    padding: 40px;
+    text-align: center;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e5e7;
+    border-top: 3px solid #007aff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.results {
+    padding: 24px;
+}
+
+.result-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e5e5e7;
+}
+
+.result-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.result-section h3 {
+    color: #1d1d1f;
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+}
+
+.result-content {
+    background: #f9f9fb;
+    border-radius: 8px;
+    padding: 16px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.swarm-metrics {
+    background: #e8f4fd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+.swarm-metrics h4 {
+    color: #007aff;
+    margin-bottom: 8px;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    font-size: 14px;
+}
+
+.metric {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.metric-label {
+    color: #86868b;
+    font-size: 12px;
+}
+
+.metric-value {
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+.human-input {
+    background: #fff8e1;
+    border: 2px solid #ff9800;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.human-input h3 {
+    color: #e65100;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.human-input h3::before {
+    content: "🤝";
+}
+
+.human-prompt {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border-left: 4px solid #ff9800;
+    font-style: italic;
+}
+
+.human-input textarea {
+    width: 100%;
+    border: 2px solid #ffcc80;
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 16px;
+    resize: vertical;
+    font-family: inherit;
+    margin-bottom: 16px;
+}
+
+.human-input textarea:focus {
+    outline: none;
+    border-color: #ff9800;
+}
+
+.human-controls {
+    display: flex;
+    gap: 12px;
+}
+
+.human-controls button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#submitResponse {
+    background: #ff9800;
+    color: white;
+}
+
+#submitResponse:hover {
+    background: #f57c00;
+}
+
+.secondary {
+    background: #e0e0e0;
+    color: #424242;
+}
+
+.secondary:hover {
+    background: #bdbdbd;
+}
+
+.hidden {
+    display: none;
+}
+
+.error {
+    background: #fff2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 16px;
+    border-radius: 8px;
+}

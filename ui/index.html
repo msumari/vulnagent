@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VulnAgent - Vulnerability Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>VulnAgent</h1>
+            <p>AI-Powered Vulnerability Management System</p>
+        </header>
+
+        <div class="input-section">
+            <textarea 
+                id="prompt" 
+                placeholder="Enter vulnerability analysis request (e.g., 'Analyze high severity vulnerabilities and create remediation plan')"
+                rows="3"
+            ></textarea>
+            
+            <div class="controls">
+                <label>
+                    <input type="checkbox" id="swarmMode"> Use Swarm Mode
+                </label>
+                <button id="analyzeBtn">Analyze</button>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analyzing vulnerabilities...</p>
+            </div>
+            
+            <div id="humanInput" class="human-input hidden">
+                <h3>Human Input Required</h3>
+                <div id="humanPrompt" class="human-prompt"></div>
+                <textarea id="humanResponse" placeholder="Enter your response..." rows="3"></textarea>
+                <div class="human-controls">
+                    <button id="submitResponse">Submit Response</button>
+                    <button id="cancelHandoff" class="secondary">Cancel</button>
+                </div>
+            </div>
+            
+            <div id="results" class="results hidden"></div>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
