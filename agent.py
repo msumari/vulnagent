@@ -12,11 +12,28 @@ from mcp.client.streamable_http import streamablehttp_client
 from strands_tools import handoff_to_user
 from strands.multiagent import Swarm
 from bedrock_agentcore.tools.code_interpreter_client import code_session
+from fastapi.middleware.cors import CORSMiddleware
 
 app = BedrockAgentCoreApp()
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
-# Custom Code Interpreter tool for VulnAgent
+
+@tool
+def ui_handoff_to_user(message: str, breakout_of_loop: bool = False):
+    """UI-compatible handoff tool that doesn't block"""
+    return {
+        "status": "awaiting_human_input",
+        "message": message,
+        "breakout_of_loop": breakout_of_loop
+    }
 @tool
 def execute_remediation_code(code: str, description: str = ""):
     """Execute Python code for vulnerability remediation, testing, and analysis"""
@@ -61,6 +78,7 @@ Decision Protocol:
 - Always provide risk assessment with clear reasoning
 - Include prioritized recommendations based on severity and impact
 - Suggest investigation steps and monitoring approaches
+- When using handoff_to_agent -> Use only simple message parameter, do not pass complex context objects
 
 Focus on providing valuable security insights and practical recommendations that help users understand and prioritize their vulnerability management efforts.
 """
@@ -79,6 +97,7 @@ Key Responsibilities:
 - For RECURRING vulnerabilities: Use past successful solutions as base, apply automatically, then request human review
 - For NEW vulnerabilities: Create detailed remediation plans for critique and human approval
 - Handle different remediation types: code fixes, configuration changes, policy updates, patches
+- When using handoff_to_agent -> Use only simple message parameter, do not pass complex context objects
 - For configuration changes: Provide exact config files, settings, and validation steps
 - For code fixes: Generate secure remediation scripts using code interpreter sandbox
 - Assess business impact and determine remediation urgency using risk matrices
@@ -127,6 +146,7 @@ Decision Protocol:
 - For effort assessment -> Balance fix complexity against vulnerability impact and business risk
 - Always provide constructive critique with specific improvements and reasoning
 - Include assessment of whether the vulnerability warrants the proposed remediation effort
+- When using handoff_to_agent -> Use only simple message parameter, do not pass complex context objects
 
 Focus on ensuring high-quality, justified remediation that follows security best practices and provides genuine risk reduction.
 """
@@ -154,6 +174,7 @@ Decision Protocol:
 - For retrieval optimization -> Use consistent naming and tagging for future searches
 - Always verify human approval status before recording any remediation solution
 - Include success metrics and validation results in memory entries
+- When using handoff_to_agent -> Use only simple message parameter, do not pass complex context objects
 
 Focus on building comprehensive  memory that accelerates future vulnerability response and improves organizational security posture.
 """
@@ -196,26 +217,26 @@ def get_access_token():
 
 def create_remediation_swarm():
     """Create specialized swarm for vulnerability remediation"""
-    
+
     # Create specialized agents for swarm
     vuln_critic = Agent(
         name="vuln_critic",
         model="anthropic.claude-3-haiku-20240307-v1:0",
-        system_prompt=VULN_CRITIC_SYSTEM_PROMPT
+        system_prompt=VULN_CRITIC_SYSTEM_PROMPT,
     )
-    
+
     vuln_keeper = Agent(
-        name="vuln_keeper", 
+        name="vuln_keeper",
         model="anthropic.claude-3-haiku-20240307-v1:0",
-        system_prompt=VULN_KEEPER_SYSTEM_PROMPT
+        system_prompt=VULN_KEEPER_SYSTEM_PROMPT,
     )
-    
+
     vuln_remediator = Agent(
         name="vuln_remediator",
-        model="anthropic.claude-3-haiku-20240307-v1:0", 
-        system_prompt=VULN_REMEDIATION_SYSTEM_PROMPT
+        model="anthropic.claude-3-haiku-20240307-v1:0",
+        system_prompt=VULN_REMEDIATION_SYSTEM_PROMPT,
     )
-    
+
     # Create swarm with safety mechanisms
     swarm = Swarm(
         [vuln_remediator, vuln_critic, vuln_keeper],
@@ -224,9 +245,9 @@ def create_remediation_swarm():
         execution_timeout=300.0,
         node_timeout=120.0,
         repetitive_handoff_detection_window=4,
-        repetitive_handoff_min_unique_agents=2
+        repetitive_handoff_min_unique_agents=2,
     )
-    
+
     return swarm
 
 
@@ -252,7 +273,7 @@ def create_vuln_agent():
 
         with gateway_client:
             tools = gateway_client.list_tools_sync()
-            tools.append(handoff_to_user)
+            tools.append(ui_handoff_to_user)  # Use UI-compatible handoff
             tools.append(execute_remediation_code)
 
             agent = Agent(
@@ -267,7 +288,6 @@ def create_vuln_agent():
         print(f"Gateway connection failed: {e}")
         return None, None
 
-
     """Process vulnerability management requests"""
     user_input = payload.get("prompt", "Analyze vulnerability status")
 
@@ -277,38 +297,46 @@ def invoke(payload):
     """Process vulnerability management requests - supports both single agent and swarm modes"""
     user_input = payload.get("prompt", "Analyze vulnerability status")
     swarm_mode = payload.get("swarm_mode", False)
+    human_response = payload.get("human_response", None)
+    conversation_id = payload.get("conversation_id", "new_conversation")
 
     try:
         if swarm_mode:
             # Gather → Swarm mode
             agent, gateway_client = create_vuln_agent()
-            
+
             if agent and gateway_client:
                 with gateway_client:
                     # Step 1: Gather vulnerabilities
-                    gather_result = agent(f"Gather and analyze vulnerability findings: {user_input}")
-                    
+                    gather_result = agent(
+                        f"Gather and analyze vulnerability findings: {user_input}"
+                    )
+
                     # Step 2: Create and invoke remediation swarm
                     swarm = create_remediation_swarm()
-                    gather_text = gather_result.message.content[0].text if hasattr(gather_result.message, 'content') else str(gather_result.message)
+                    gather_text = (
+                        gather_result.message.content[0].text
+                        if hasattr(gather_result.message, "content")
+                        else str(gather_result.message)
+                    )
                     swarm_task = f"Based on these vulnerability findings, create comprehensive remediation plan:\n\n{gather_text}"
                     swarm_result = swarm(swarm_task)
-                    
-                    # Step 3: Human approval
-                    approval_result = agent(f"Present this remediation plan for human approval using handoff_to_user:\n\n{swarm_result}")
-                    
+
+                    # Step 3: Check for human handoff and return appropriate response
                     return {
                         "result": {
                             "gather_phase": gather_result.message,
                             "swarm_remediation": swarm_result,
-                            "human_approval": approval_result.message
+                            "status": "awaiting_human_input",
+                            "human_prompt": "Please review the comprehensive remediation plan and provide your approval or feedback:",
+                            "conversation_id": conversation_id or "new_conversation"
                         }
                     }
             else:
                 # Fallback mode
                 basic_agent = Agent(
                     model="anthropic.claude-3-haiku-20240307-v1:0",
-                    tools=[handoff_to_user, execute_remediation_code],
+                    tools=[ui_handoff_to_user, execute_remediation_code],
                     system_prompt=VULN_GATHERER_SYSTEM_PROMPT,
                 )
                 result = basic_agent(user_input)
@@ -325,7 +353,7 @@ def invoke(payload):
                 # Fallback to basic agent
                 basic_agent = Agent(
                     model="anthropic.claude-3-haiku-20240307-v1:0",
-                    tools=[handoff_to_user, execute_remediation_code],
+                    tools=[ui_handoff_to_user, execute_remediation_code],
                     system_prompt=VULN_GATHERER_SYSTEM_PROMPT,
                 )
                 result = basic_agent(user_input)

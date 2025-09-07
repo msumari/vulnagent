@@ -5,3 +5,4 @@ bedrock-agentcore
 bedrock-agentcore-starter-toolkit
 mcp
 requests
+fastapi
