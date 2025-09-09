@@ -30,9 +30,7 @@ def handle_gateway_tool_call(event, tool_name):
 
 def analyze_vulnerability_finding(params):
     """Analyze a specific vulnerability finding"""
-    finding_arn = params.get("findingArn", "")
-    severity = params.get("severity", "UNKNOWN")
-    title = params.get("title", "Unknown vulnerability")
+    # TODO: Implement vulnerability finding analysis logic
 
     analysis = {
         "findingArn": finding_arn,
@@ -47,7 +45,9 @@ def analyze_vulnerability_finding(params):
 
 def process_inspector_event(inspector_event):
     """Process a complete Inspector EventBridge event"""
-    detail = inspector_event.get("detail", {})
+    # TODO: Implement Inspector event processing logic
+    # detail = inspector_event.get("detail", {})
+
     return analyze_vulnerability_finding(
         {
             "findingArn": detail.get("findingArn", ""),
@@ -59,10 +59,7 @@ def process_inspector_event(inspector_event):
 
 def handle_inspector_event(event):
     """Handle direct Inspector EventBridge events"""
-    detail = event.get("detail", {})
-    finding_arn = detail.get("findingArn", "")
-    severity = detail.get("severity", "")
-    title = detail.get("title", "")
+    # TODO: Implement Inspector event handling logic
 
     print(f"Inspector Event - Finding: {title}, Severity: {severity}")
 
