@@ -4,13 +4,16 @@ import json
 def lambda_handler(event, context):
     print(f"Received event: {json.dumps(event)}")
 
-    # Check if this is a Gateway tool call
+    # Only handle Gateway tool calls
     tool_name = getattr(context, "bedrockagentcoreToolName", None)
-
+    
     if tool_name:
         return handle_gateway_tool_call(event, tool_name)
     else:
-        return handle_inspector_event(event)
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": "Only Gateway tool calls supported"}),
+        }
 
 
 def handle_gateway_tool_call(event, tool_name):
@@ -19,8 +22,6 @@ def handle_gateway_tool_call(event, tool_name):
 
     if tool_name == "analyze_vulnerability_finding":
         return analyze_vulnerability_finding(event)
-    elif tool_name == "process_inspector_event":
-        return process_inspector_event(event.get("event", {}))
     else:
         return {
             "statusCode": 400,
@@ -43,32 +44,10 @@ def analyze_vulnerability_finding(params):
     return {"statusCode": 200, "body": json.dumps(analysis)}
 
 
-def process_inspector_event(inspector_event):
-    """Process a complete Inspector EventBridge event"""
-    # TODO: Implement Inspector event processing logic
-    # detail = inspector_event.get("detail", {})
-
-    return analyze_vulnerability_finding(
-        {
-            "findingArn": detail.get("findingArn", ""),
-            "severity": detail.get("severity", ""),
-            "title": detail.get("title", ""),
-        }
-    )
 
 
-def handle_inspector_event(event):
-    """Handle direct Inspector EventBridge events"""
-    # TODO: Implement Inspector event handling logic
 
-    print(f"Inspector Event - Finding: {title}, Severity: {severity}")
 
-    return {
-        "statusCode": 200,
-        "body": json.dumps(
-            {"message": "Inspector finding processed", "findingArn": finding_arn}
-        ),
-    }
 
 
 def get_risk_level(severity):

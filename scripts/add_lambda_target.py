@@ -44,20 +44,6 @@ def add_curator_lambda_target(lambda_arn):
                         },
                         "required": ["findingArn"]
                     }
-                },
-                {
-                    "name": "process_inspector_event",
-                    "description": "Process Inspector EventBridge event",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {
-                            "event": {
-                                "type": "object",
-                                "description": "Complete Inspector EventBridge event"
-                            }
-                        },
-                        "required": ["event"]
-                    }
                 }
             ]
         }
