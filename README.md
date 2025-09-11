@@ -192,7 +192,7 @@ npm run dev
 # Or test via curl
 curl -X POST http://localhost:8080/invocations \
 -H "Content-Type: application/json" \
--d '{"prompt": "Test Gateway connection and analyze vulnerabilities"}'
+-d '{"prompt": "Analyze vulnerability findings"}'
 ```
 
 5. **Deploy to Runtime:**
@@ -254,19 +254,26 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 ### Local Testing
 
 ```bash
-# Start agent
-python agent.py
-
-# Test vulnerability analysis
+# Test single agent mode
 curl -X POST http://localhost:8080/invocations \
 -H "Content-Type: application/json" \
--d '{"prompt": "Analyze CVE-2024-9999 - Remote Code Execution, severity CRITICAL"}'
+-d '{"prompt": "Analyze vulnerability findings"}'
+
+# Test swarm mode
+curl -X POST http://localhost:8080/invocations \
+-H "Content-Type: application/json" \
+-d '{"prompt": "Analyze vulnerability findings and create remediation plan", "swarm_mode": true}'
 ```
 
 ### Runtime Testing
 
-For runtime deployment and testing, follow the complete guide at:
-https://strandsagents.com/latest/documentation/docs/user-guide/deploy/deploy_to_bedrock_agentcore/
+```bash
+# Test single agent mode
+agentcore invoke '{"prompt": "Analyze vulnerability findings"}'
+
+# Test swarm mode
+agentcore invoke '{"prompt": "Analyze vulnerability findings and create remediation plan", "swarm_mode": true}'
+```
 
 ## 📊 Sample Output
 
