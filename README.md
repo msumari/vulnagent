@@ -16,7 +16,7 @@ VulnAgent demonstrates advanced agentic AI capabilities for vulnerability manage
 ## 🏗️ Architecture
 
 ```
-AWS Inspector → EventBridge → Lambda (Curator) → MCP Gateway → VulnAgent → Analysis & Human Approval → Remediation
+Inspector ← Lambda (Curator) → MCP Gateway → VulnAgent → Analysis & Human Approval → Remediation
 ```
 
 ## 🚀 Components
@@ -126,17 +126,16 @@ npm run dev
 
 ### 4. **Curator (Lambda Function)**
 
-Processes AWS Inspector vulnerability findings and serves as MCP tools via Gateway.
+Fetches AWS Inspector vulnerability findings directly and serves as MCP tools via Gateway.
 
 **Features:**
 
-- ✅ EventBridge integration for Inspector events
+- ✅ Direct Inspector2 integration via boto3
 - ✅ MCP tool endpoints for vulnerability analysis
 
 **Tools Available:**
 
-- `analyze_vulnerability_finding`: Analyze specific vulnerabilities
-- `process_inspector_event`: Process Inspector EventBridge events
+- `analyze_vulnerability_finding`: Fetch and analyze Inspector2 findings
 
 **Deploy:**
 
@@ -245,7 +244,7 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 
 ### ✅ **AWS Native Architecture**
 
-- Inspector → EventBridge → Lambda pipeline
+- Inspector → Lambda integration
 - AgentCore Runtime deployment
 - ECR container registry integration
 - IAM role-based security
