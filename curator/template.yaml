@@ -8,3 +8,11 @@ Resources:
       CodeUri: src/
       Handler: handler.lambda_handler
       Runtime: python3.11
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - inspector2:ListFindings
+                - inspector2:GetFindings
+              Resource: '*'

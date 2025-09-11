@@ -1,19 +1,23 @@
 import json
+import boto3
+
+# Initialize Inspector2 client
+inspector_client = boto3.client("inspector2")
 
 
 def lambda_handler(event, context):
-    print(f"Received event: {json.dumps(event)}")
-
-    # Only handle Gateway tool calls
+    # Get tool name from context
     tool_name = getattr(context, "bedrockagentcoreToolName", None)
     
-    if tool_name:
-        return handle_gateway_tool_call(event, tool_name)
-    else:
-        return {
-            "statusCode": 400,
-            "body": json.dumps({"error": "Only Gateway tool calls supported"}),
-        }
+    # If no tool name, assume this is a Gateway call for our main tool
+    if not tool_name:
+        tool_name = "analyze_vulnerability_finding"
+    
+    # Strip target prefix if present
+    if "___" in tool_name:
+        tool_name = tool_name.split("___")[-1]
+    
+    return handle_gateway_tool_call(event, tool_name)
 
 
 def handle_gateway_tool_call(event, tool_name):
@@ -29,25 +33,64 @@ def handle_gateway_tool_call(event, tool_name):
         }
 
 
+def get_inspector_findings(severity_filter=None, max_results=20):
+    """Fetch findings from Inspector2"""
+    try:
+        filters = {}
+        if severity_filter:
+            filters["severity"] = [{"comparison": "EQUALS", "value": severity_filter}]
+
+        response = inspector_client.list_findings(
+            filterCriteria=filters, maxResults=max_results
+        )
+
+        findings = []
+        for finding in response.get("findings", []):
+            findings.append(
+                {
+                    "findingArn": finding.get("findingArn"),
+                    "severity": finding.get("severity"),
+                    "title": finding.get("title"),
+                    "description": finding.get("description"),
+                    "type": finding.get("type"),
+                    "status": finding.get("status"),
+                }
+            )
+
+        return findings
+    except Exception as e:
+        print(f"Error fetching Inspector findings: {e}")
+        return []
+
+
 def analyze_vulnerability_finding(params):
-    """Analyze a specific vulnerability finding"""
-    # TODO: Implement vulnerability finding analysis logic
+    """Fetch and analyze vulnerability findings from Inspector2"""
+    # Fetch findings directly from Inspector2 (no parameters needed)
+    findings = get_inspector_findings()
 
-    analysis = {
-        "findingArn": finding_arn,
-        "severity": severity,
-        "title": title,
-        "riskLevel": get_risk_level(severity),
-        "recommendations": get_recommendations(severity, title),
+    # Analyze each finding
+    analyzed_findings = []
+    for finding in findings:
+        analyzed_finding = {
+            "findingArn": finding.get("findingArn"),
+            "severity": finding.get("severity"),
+            "title": finding.get("title"),
+            "description": finding.get("description"),
+            "type": finding.get("type"),
+            "status": finding.get("status"),
+            "riskLevel": get_risk_level(finding.get("severity", "UNKNOWN")),
+            "recommendations": get_recommendations(
+                finding.get("severity", "UNKNOWN"), finding.get("title", "")
+            ),
+        }
+        analyzed_findings.append(analyzed_finding)
+
+    return {
+        "statusCode": 200,
+        "body": json.dumps(
+            {"findings": analyzed_findings, "count": len(analyzed_findings)}
+        ),
     }
-
-    return {"statusCode": 200, "body": json.dumps(analysis)}
-
-
-
-
-
-
 
 
 def get_risk_level(severity):
