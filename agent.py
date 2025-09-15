@@ -9,9 +9,9 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from strands import Agent, tool
 from strands.tools.mcp import MCPClient
 from mcp.client.streamable_http import streamablehttp_client
-from strands_tools import handoff_to_user
 from strands.multiagent import Swarm
 from bedrock_agentcore.tools.code_interpreter_client import code_session
+from strands_tools.agent_core_memory import AgentCoreMemoryToolProvider
 from fastapi.middleware.cors import CORSMiddleware
 
 app = BedrockAgentCoreApp()
@@ -104,7 +104,7 @@ You are VulnRemediator, a specialized remediation planning assistant designed to
 5. Create human-reviewable remediation plans with rollback capabilities
 
 Key Responsibilities:
-- Check agent_core_memory for past remediation history of similar vulnerabilities
+- Use handoff_to_agent to VulnKeeper to check past remediation history of similar vulnerabilities
 - For RECURRING vulnerabilities: Use past successful solutions as base, apply automatically, then request human review
 - For NEW vulnerabilities: Create detailed remediation plans for critique and human approval
 - Handle different remediation types: code fixes, configuration changes, policy updates, patches
@@ -127,13 +127,13 @@ Human Interaction Protocol:
   * Do NOT hand off to other agents after incorporating feedback
 
 Decision Protocol:
-- For memory search -> Use agent_core_memory to find similar past vulnerabilities
+- For memory search -> Use handoff_to_agent to VulnKeeper to find similar past vulnerabilities
 - For recurring issues -> Apply proven solutions automatically, then handoff_to_user for review/rollback
 - For new issues -> Create remediation plan for critique process
 - For configuration changes -> Provide exact config syntax, backup procedures, and validation commands
 - For script generation -> Use agent_core_code_interpreter for secure execution testing
 - For urgency assessment -> Consider CVSS scores, exploitability, business context, and exposure
-- For learning -> Use agent_core_memory to store successful remediation patterns
+- For learning -> Use handoff_to_agent to VulnKeeper to store successful remediation patterns
 - Always provide human-reviewable remediation plans with clear risk justification
 - Include rollback procedures and validation steps for each remediation type
 
@@ -240,6 +240,24 @@ def get_access_token():
 def create_remediation_swarm():
     """Create specialized swarm for vulnerability remediation"""
 
+    # Load memory config
+    try:
+        with open("memory_config.json", "r") as f:
+            memory_config = json.load(f)
+        memory_id = memory_config["memory_id"]
+
+        # Create memory tools for VulnKeeper only
+        memory_provider = AgentCoreMemoryToolProvider(
+            memory_id=memory_id,
+            actor_id="vuln_system",
+            session_id="remediation_session",
+            namespace="/vuln/remediation/vuln_system",
+            region="us-east-1",
+        )
+        memory_tools = memory_provider.tools
+    except:
+        memory_tools = []
+
     # Create specialized agents for swarm
     vuln_critic = Agent(
         name="vuln_critic",
@@ -251,6 +269,7 @@ def create_remediation_swarm():
         name="vuln_keeper",
         model="anthropic.claude-3-haiku-20240307-v1:0",
         system_prompt=VULN_KEEPER_SYSTEM_PROMPT,
+        tools=memory_tools,
     )
 
     vuln_remediator = Agent(
