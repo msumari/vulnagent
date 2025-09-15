@@ -65,6 +65,13 @@ AI agent using Claude 3 Haiku for vulnerability analysis, built with Strands fra
 VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] → Human Approval/Decline → Final Response
 ```
 
+**Memory Integration:**
+
+- VulnKeeper: Sole memory owner with AgentCore Memory tools
+- Other agents: Use handoffs to VulnKeeper for memory operations
+- Storage: Only human-approved remediation solutions stored
+- Search: Semantic search for similar past vulnerabilities
+
 **Human Interaction Flow:**
 
 - **Approve**: Proceeds with comprehensive remediation plan
@@ -171,7 +178,14 @@ python scripts/setup_gateway.py
 # ✅ Auto-generates gateway_config.json with OAuth credentials
 ```
 
-3. **Add Lambda Target:**
+3. **Setup Memory Integration:**
+
+```bash
+python scripts/setup_memory.py
+# ✅ Auto-generates memory_config.json with ID
+```
+
+4. **Add Lambda Target:**
 
 ```bash
 python scripts/add_lambda_target.py <your-lambda-arn>
@@ -217,8 +231,10 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 │   └── package.json           # Node.js dependencies and scripts
 ├── scripts/                   # Setup and deployment scripts
 │   ├── setup_gateway.py       # Gateway setup with OAuth
+│   ├── setup_memory.py        # AgentCore Memory setup
 │   └── add_lambda_target.py   # Add Lambda as Gateway target
 ├── gateway_config.json        # Auto-generated Gateway config with OAuth
+├── memory_config.json         # Auto-generated Memory config
 ├── curator/                   # Lambda function for Inspector events
 │   ├── template.yaml          # SAM template
 │   ├── src/handler.py         # Dual-mode Lambda handler
@@ -234,6 +250,13 @@ For complete runtime deployment instructions, see: https://strandsagents.com/lat
 
 - OAuth 2.0 authentication with Cognito
 - Real-time tool access via Gateway
+
+### ✅ **AgentCore Memory Integration**
+
+- Semantic memory strategy for vulnerability remediation knowledge
+- VulnKeeper manages all memory operations (search/store)
+- Only stores human-approved remediation solutions
+- Memory namespace: `/vuln/remediation/{actorId}`
 
 ### ✅ **Professional Vulnerability Analysis**
 
