@@ -355,9 +355,7 @@ VulnGatherer (Entry Point) → Swarm[VulnRemediator, VulnCritic, VulnKeeper] →
 
 **Current Issues**:
 
-- Gateway memory integration.
 - `execute_remediation_code` tool causes reference errors in swarm context
-- Occasional gateway connection timeouts during OAuth token retrieval
 
 **Status**: Under active development - core functionality working with minor reliability issues.
 
